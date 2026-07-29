@@ -1,0 +1,26 @@
+[project]
+name = "repro"
+version = "0.1.0"
+requires-python = ">=3.12"
+# This package exists on test.pypi.org but NOT on pypi.org,
+# standing in for a package hosted on a private registry.
+# It is an empty placeholder published for this reproduction:
+# https://test.pypi.org/project/ntsk-reproduce-array-form-uv-sources/
+dependencies = ["ntsk-reproduce-array-form-uv-sources==0.1.0"]
+
+[[tool.uv.index]]
+name = "custom"
+url = "https://test.pypi.org/simple/"
+explicit = true
+
+[tool.uv.sources]
+# Array form: valid for uv (uv lock resolves this from test.pypi.org),
+# but silently ignored by Renovate, which then looks the package up on
+# pypi.org and logs "Package lookup failures".
+ntsk-reproduce-array-form-uv-sources = [{ index = "custom" }]
+
+# Changing the line above to the single-table form fixes the lookup:
+# ntsk-reproduce-array-form-uv-sources = { index = "custom" }
+
+[tool.uv]
+package = false
