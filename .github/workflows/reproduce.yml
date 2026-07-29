@@ -1,0 +1,44 @@
+name: reproduce
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      LOG_LEVEL: debug
+      # silence unrelated rate-limit warnings from the python-version datasource
+      GITHUB_COM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Run Renovate with the array-form source (as committed)
+        run: npx --yes renovate@44.0.1 --platform=local 2>&1 | tee array.log
+
+      - name: 'Bug: the declared index is ignored, lookup goes to pypi.org and fails'
+        run: |
+          grep -F 'GET https://pypi.org/pypi/ntsk-reproduce-array-form-uv-sources/json' array.log
+          grep -F 'Failed to look up pypi package ntsk-reproduce-array-form-uv-sources' array.log
+
+      - name: Switch to the single-table form (the only change)
+        run: |
+          sed -i 's/^ntsk-reproduce-array-form-uv-sources = \[{ index = "custom" }\]$/ntsk-reproduce-array-form-uv-sources = { index = "custom" }/' pyproject.toml
+          git diff
+
+      - name: Run Renovate with the single-table source
+        run: npx --yes renovate@44.0.1 --platform=local 2>&1 | tee single.log
+
+      - name: 'Expected: the declared index is used, no lookup failure'
+        run: |
+          grep -F '"registryUrls": ["https://test.pypi.org/simple/"]' single.log
+          ! grep -F 'Failed to look up pypi package ntsk-reproduce-array-form-uv-sources' single.log
