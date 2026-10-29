@@ -20,7 +20,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version: '26'
 
       - name: Run Renovate with the array-form source (as committed)
         run: npx --yes renovate@44.0.1 --platform=local 2>&1 | tee array.log
